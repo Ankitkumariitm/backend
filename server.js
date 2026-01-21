@@ -7,47 +7,44 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const HF_API_KEY = process.env.HF_API_KEY; // 🔐 env variable
 
 app.post("/ask", async (req, res) => {
   try {
     const { question } = req.body;
+
     if (!question) {
       return res.status(400).json({ answer: "Question missing" });
     }
 
-    const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
-      GEMINI_API_KEY;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: question }]
-          }
-        ]
-      })
-    });
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/google/flan-t5-base",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: question
+        })
+      }
+    );
 
     const data = await response.json();
+    console.log("HF raw response:", data);
 
-    console.log("Gemini raw response:", JSON.stringify(data, null, 2));
-
-    const answer =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!answer) {
-      return res.json({ answer: "No answer from Gemini" });
+    // HuggingFace response handling
+    if (Array.isArray(data) && data[0]?.generated_text) {
+      res.json({ answer: data[0].generated_text });
+    } else if (data.error) {
+      res.json({ answer: "Model loading, try again in 10 sec" });
+    } else {
+      res.json({ answer: "No answer from HuggingFace" });
     }
 
-    res.json({ answer });
-
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ answer: "Server error" });
   }
 });
