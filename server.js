@@ -7,31 +7,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Nayi Key ke saath setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.get('/', (req, res) => res.send("Server is Live"));
 
 app.post('/chat', async (req, res) => {
   try {
     const { question, type } = req.body;
+    
+    // v1beta humne isliye use kiya tha kyunki v1 404 de raha tha
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
 
-    // FIX: Yahan 'v1beta' likhna hi sabse bada solution hai
-    const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash" 
-    }, { apiVersion: 'v1beta' }); 
-
-    const prompt = `Student wants info about ${type} for ${question} in Hindi.`;
-
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(`Tell me about ${type} for ${question} in Hindi.`);
     const response = await result.response;
-    const text = response.text();
-
-    res.json({ answer: text });
-
+    res.json({ answer: response.text() });
   } catch (error) {
-    console.error("ERROR:", error.message);
-    res.status(500).json({ answer: "API Error: " + error.message });
+    console.error(error);
+    res.status(500).json({ answer: "Error: " + error.message });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+app.listen(PORT, () => console.log(`Running on ${PORT}`));
