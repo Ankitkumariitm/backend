@@ -30,8 +30,7 @@ app.post('/chat', async (req, res) => {
       return res.status(400).send({ answer: "Please enter an exam name." });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     // AI ke liye instruction/prompt
     const prompt = `Student wants to know about "${type}" for the exam: "${question}". 
                     Provide the syllabus, pattern, or tips in Hindi with clear points.`;
@@ -54,3 +53,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
