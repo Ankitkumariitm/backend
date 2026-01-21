@@ -1,31 +1,59 @@
-const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const cors = require('cors');
-require('dotenv').config();
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 🔐 API KEY SERVER SIDE ONLY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-app.get('/', (req, res) => res.send("Server is Live"));
-
-app.post('/chat', async (req, res) => {
+app.post("/ask", async (req, res) => {
   try {
-    const { question, type } = req.body;
-    
-    // v1beta humne isliye use kiya tha kyunki v1 404 de raha tha
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
+    const { question } = req.body;
 
-    const result = await model.generateContent(`Tell me about ${type} for ${question} in Hindi.`);
-    const response = await result.response;
-    res.json({ answer: response.text() });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ answer: "Error: " + error.message });
+    if (!question) {
+      return res.status(400).json({ answer: "Question missing" });
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: question }],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content.parts[0].text
+    ) {
+      res.json({
+        answer: data.candidates[0].content.parts[0].text,
+      });
+    } else {
+      console.log("Gemini response:", data);
+      res.status(500).json({ answer: "No answer from Gemini" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ answer: "Server error" });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Running on ${PORT}`));
+app.listen(3000, () => {
+  console.log("✅ Backend running on port 3000");
+});
