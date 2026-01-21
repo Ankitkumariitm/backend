@@ -7,16 +7,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// API Key setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post('/chat', async (req, res) => {
   try {
     const { question, type } = req.body;
 
-    // Latest model syntax
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // YAHAN BADLAV HAI: v1beta ka use kiya hai
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash" 
+    }, { apiVersion: 'v1beta' });
 
-    const prompt = `You are a helpful education assistant. Provide ${type} for the exam "${question}" in Hindi. Use bullet points and clear headings.`;
+    const prompt = `Student wants info about ${type} for ${question} in Hindi.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -25,9 +28,8 @@ app.post('/chat', async (req, res) => {
     res.json({ answer: text });
 
   } catch (error) {
-    console.error("DEBUG LOG:", error);
-    // Agar model nahi mil raha toh ye error message bhejega
-    res.status(500).json({ answer: "Server Error: " + error.message });
+    console.error("LOG ERROR:", error.message);
+    res.status(500).json({ answer: "API Error: " + error.message });
   }
 });
 
