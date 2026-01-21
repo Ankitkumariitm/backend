@@ -7,19 +7,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// API Key setup
+// YAHAN DHAYAN DEIN: Hum API Key ke saath v1beta version specify kar rahe hain
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post('/chat', async (req, res) => {
   try {
     const { question, type } = req.body;
 
-    // YAHAN BADLAV HAI: v1beta ka use kiya hai
+    // YAHAN FIX HAI: v1beta endpoint specify kiya hai
     const model = genAI.getGenerativeModel({ 
         model: "gemini-1.5-flash" 
-    }, { apiVersion: 'v1beta' });
+    }, { apiVersion: 'v1beta' }); 
 
-    const prompt = `Student wants info about ${type} for ${question} in Hindi.`;
+    const prompt = `Provide ${type} for the exam "${question}" in Hindi. Use bullet points.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -28,10 +28,10 @@ app.post('/chat', async (req, res) => {
     res.json({ answer: text });
 
   } catch (error) {
-    console.error("LOG ERROR:", error.message);
+    console.error("LOG:", error.message);
     res.status(500).json({ answer: "API Error: " + error.message });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
